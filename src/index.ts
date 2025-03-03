@@ -27,9 +27,11 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: process.env.CORS_ORIGIN || "*",
-    methods: ["GET", "POST"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization"],
   },
+  transports: ["websocket", "polling"],
 });
 
 // Setup Socket.io handlers
@@ -58,6 +60,8 @@ app.use(
   cors({
     origin: process.env.CORS_ORIGIN || "*",
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 app.use(helmet());
@@ -89,10 +93,14 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 // Start server
-const PORT = process.env.PORT || 8080;
-server.listen(PORT, () => {
-  logger.info(`Server running on port ${PORT}`);
-});
+const PORT = process.env.PORT || 10000;
+if (process.env.NODE_ENV !== "test") {
+  server.listen(PORT, () => {
+    logger.info(`Server running on port ${PORT}`);
+    logger.info(`CORS origin: ${process.env.CORS_ORIGIN || "*"}`);
+    logger.info(`Environment: ${process.env.NODE_ENV || "development"}`);
+  });
+}
 
 // Handle unhandled promise rejections
 process.on("unhandledRejection", (err) => {
@@ -103,4 +111,5 @@ process.on("unhandledRejection", (err) => {
   }
 });
 
+// Make sure to export the server for server.js to use
 export { app, io, server };

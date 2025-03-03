@@ -8,7 +8,8 @@
     "dev": "nodemon --exec ts-node src/index.ts",
     "build": "tsc",
     "lint": "eslint . --ext .ts",
-    "test": "jest --passWithNoTests --config jest.config.js"
+    "test": "jest --passWithNoTests --config jest.config.js",
+    "prepare-deployment": "node scripts/prepare-deployment.js"
   },
   "engines": {
     "node": ">=18.0.0"
