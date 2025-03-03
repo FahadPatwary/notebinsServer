@@ -17,6 +17,9 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
     permissions:
       contents: read #This is required for actions/checkout
 
@@ -32,23 +35,18 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-        working-directory: backend
 
       - name: Build
         run: npm run build
-        working-directory: backend
 
       - name: Run tests
         run: npm test
-        working-directory: backend
 
       - name: Prepare deployment
         run: npm run prepare-deployment
-        working-directory: backend
 
       - name: Zip artifact for deployment
         run: |
-          cd backend
           mkdir -p deployment
           cp -r dist/* deployment/
           cp web.config deployment/ || true
@@ -64,6 +62,7 @@ jobs:
         with:
           name: node-app
           path: deploy.zip
+        working-directory: ${{ github.workspace }}
 
   deploy:
     runs-on: ubuntu-latest

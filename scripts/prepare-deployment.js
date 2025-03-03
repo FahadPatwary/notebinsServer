@@ -22,9 +22,9 @@ if (!fs.existsSync(distDir)) {
 }
 
 // Create logs directory if it doesn't exist
-const logsDir = path.join(rootDir, 'logs');
+const logsDir = path.join(distDir, 'logs');
 if (!fs.existsSync(logsDir)) {
-  console.log('Creating logs directory...');
+  console.log('Creating logs directory in dist...');
   try {
     fs.mkdirSync(logsDir, { recursive: true });
   } catch (error) {
@@ -40,20 +40,20 @@ if (fs.existsSync(webConfigSrc)) {
   console.log('Copying web.config to dist directory...');
   try {
     fs.copyFileSync(webConfigSrc, webConfigDest);
+    console.log('web.config copied successfully.');
   } catch (error) {
     console.warn('Failed to copy web.config:', error);
     console.warn('This may cause issues with Azure deployment.');
   }
 } else {
-  console.error('web.config not found in root directory. Deployment might fail.');
-  console.log('Creating a basic web.config file...');
+  console.error('web.config not found in root directory. Creating a basic one...');
   
   const basicWebConfig = `<?xml version="1.0" encoding="utf-8"?>
 <configuration>
   <system.webServer>
     <webSocket enabled="true" />
     <handlers>
-      <add name="iisnode" path="index.js" verb="*" modules="iisnode" />
+      <add name="iisnode" path="server.js" verb="*" modules="iisnode" />
     </handlers>
     <rewrite>
       <rules>
@@ -61,7 +61,7 @@ if (fs.existsSync(webConfigSrc)) {
           <conditions>
             <add input="{REQUEST_FILENAME}" matchType="IsFile" negate="True" />
           </conditions>
-          <action type="Rewrite" url="index.js" />
+          <action type="Rewrite" url="server.js" />
         </rule>
       </rules>
     </rewrite>
@@ -87,13 +87,13 @@ try {
     name: packageJson.name,
     version: packageJson.version,
     description: packageJson.description,
-    main: 'index.js',
+    main: 'server.js',
     engines: {
       node: "18.x"  // Explicitly set Node.js version to 18.x
     },
     dependencies: packageJson.dependencies,
     scripts: {
-      start: 'node index.js'
+      start: 'node server.js'
     }
   };
 
@@ -102,6 +102,7 @@ try {
     path.join(distDir, 'package.json'),
     JSON.stringify(prodPackageJson, null, 2)
   );
+  console.log('Production package.json created successfully.');
 } catch (error) {
   console.error('Failed to create production package.json:', error);
   process.exit(1);
@@ -115,8 +116,10 @@ if (!fs.existsSync(envDest)) {
     // Add PORT=8080 to the .env file
     fs.writeFileSync(envDest, 
       '# Production environment variables will be set in Azure App Service\n' +
-      'PORT=8080\n'
+      'PORT=8080\n' +
+      'NODE_ENV=production\n'
     );
+    console.log('.env file created successfully.');
   } catch (error) {
     console.warn('Failed to create .env file:', error);
     // Continue anyway, as this is not critical
@@ -132,22 +135,17 @@ const app = require('./index.js');
 const PORT = process.env.PORT || 8080;
 
 // If the app exports a server or http.Server instance, we need to ensure it's listening
-if (app.listen) {
+if (app && app.listen) {
+  console.log('Starting server on port ' + PORT);
   app.listen(PORT, () => {
     console.log(\`Server running on port \${PORT}\`);
   });
+} else {
+  console.log('App is already listening or not an Express app');
 }
 `;
   fs.writeFileSync(serverJsPath, serverJsContent);
-  
-  // Update the package.json start script to use server.js
-  const packageJsonPath = path.join(distDir, 'package.json');
-  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-  packageJson.main = 'server.js';
-  packageJson.scripts.start = 'node server.js';
-  fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
-  
-  console.log('Created server.js and updated package.json successfully.');
+  console.log('server.js created successfully.');
 } catch (error) {
   console.warn('Failed to create server.js:', error);
   // Continue anyway, as this might not be critical if the app already listens correctly
@@ -186,7 +184,13 @@ fi
 
 # Start the application
 echo "Starting server on port $PORT..."
-node server.js
+if [ -f "server.js" ]; then
+  echo "Using server.js as entry point"
+  node server.js
+else
+  echo "Using index.js as entry point"
+  node index.js
+fi
 `;
     fs.writeFileSync(startupDest, startupContent);
     // Make it executable
@@ -208,6 +212,8 @@ if (fs.existsSync(packageLockSrc)) {
   } catch (error) {
     console.warn('Failed to copy package-lock.json:', error);
   }
+} else {
+  console.warn('package-lock.json not found in root directory. This may cause issues with dependency installation.');
 }
 
 console.log('Deployment preparation complete!'); 
