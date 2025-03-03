@@ -1,0 +1,52 @@
+name: Deploy NoteBins Backend to Azure
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: "18.x"
+  AZURE_WEBAPP_NAME: notebins-backend
+  AZURE_WEBAPP_PACKAGE_PATH: "backend"
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: "backend/package-lock.json"
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          npm ci
+
+      - name: Build
+        run: |
+          cd backend
+          npm run build
+
+      - name: Zip artifact for deployment
+        run: |
+          cd backend
+          zip -r ../deploy.zip . -x "node_modules/*" "src/*" ".git*" "*.env*"
+
+      - name: Deploy to Azure Web App
+        id: deploy-to-webapp
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: deploy.zip
+
+      - name: Clean up
+        run: rm deploy.zip
