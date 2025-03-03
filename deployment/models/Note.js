@@ -15,34 +15,38 @@ var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (
 }) : function(o, v) {
     o["default"] = v;
 });
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.toSafeNote = exports.Note = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
-const nanoid_1 = require("nanoid");
+
+// Use a custom nanoid implementation instead of the ESM module
+// This avoids the ESM import issue
+const customNanoid = (size = 10) => {
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let id = '';
+    for (let i = 0; i < size; i++) {
+        id += alphabet.charAt(Math.floor(Math.random() * alphabet.length));
+    }
+    return id;
+};
+
 // Define the Note schema
 const noteSchema = new mongoose_1.Schema({
     id: {
         type: String,
         required: true,
         unique: true,
-        default: () => (0, nanoid_1.nanoid)(10),
+        default: () => customNanoid(10),
         index: true,
     },
     content: {
@@ -73,8 +77,10 @@ const noteSchema = new mongoose_1.Schema({
 }, {
     timestamps: true,
 });
+
 // Create and export the Note model
 exports.Note = mongoose_1.default.model("Note", noteSchema);
+
 // Function to convert a Note to a SafeNote
 const toSafeNote = (note) => {
     const { password, ...safeNote } = note.toObject();
