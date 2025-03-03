@@ -1,4 +1,4 @@
-name: Deploy NoteBins Backend to Azure
+name: Deploy Node.js App to Azure
 
 on:
   push:
@@ -8,16 +8,13 @@ on:
 
 env:
   NODE_VERSION: "18.x"
-  AZURE_WEBAPP_NAME: notebins-backend
-  AZURE_WEBAPP_PACKAGE_PATH: "."
+  AZURE_WEBAPP_NAME: "nodeapp"
+  RESOURCE_GROUP: "my-node-app-rg"
 
 jobs:
   build-and-deploy:
     name: Build and Deploy
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
     steps:
       - uses: actions/checkout@v3
 
@@ -30,37 +27,47 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+        working-directory: backend
 
       - name: Build
         run: npm run build
+        working-directory: backend
 
-      # Run tests with explicit config
       - name: Run tests
         run: npm test
+        working-directory: backend
 
       - name: Prepare deployment
         run: npm run prepare-deployment
+        working-directory: backend
 
       - name: Zip artifact for deployment
         run: |
+          cd backend
           mkdir -p deployment
           cp -r dist/* deployment/
           cp web.config deployment/ || true
           cp package.json deployment/
-          cp -r node_modules deployment/
           cd deployment
           zip -r ../../deploy.zip .
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_E2606AAA9E5E48FF8CF66B6706BEE255 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_7AAD3F825C2D41D8BE7CAD38C70D2451 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_625B6336EF244756A94B7EC3FC023742 }}
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v2
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          resource-group: ${{ env.RESOURCE_GROUP }}
+          slot-name: "Production"
           package: deploy.zip
 
       - name: Clean up
         run: |
-          rm -rf deployment
-          cd ..
-          rm deploy.zip
+          rm -rf backend/deployment
+          rm -f deploy.zip

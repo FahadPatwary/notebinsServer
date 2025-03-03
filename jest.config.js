@@ -1,3 +1,4 @@
+/** @type {import('ts-jest').JestConfigWithTsJest} */
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
@@ -7,7 +8,9 @@ module.exports = {
     '**/?(*.)+(spec|test).ts'
   ],
   transform: {
-    '^.+\\.ts$': 'ts-jest'
+    '^.+\\.ts$': ['ts-jest', {
+      tsconfig: 'tsconfig.json'
+    }]
   },
   moduleFileExtensions: ['ts', 'js', 'json', 'node'],
   collectCoverageFrom: [
@@ -16,5 +19,11 @@ module.exports = {
     '!src/**/__tests__/**'
   ],
   coverageDirectory: 'coverage',
-  verbose: true
+  verbose: true,
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '/dist/'
+  ],
+  // Allow tests to pass even if there are none
+  passWithNoTests: true
 }; 

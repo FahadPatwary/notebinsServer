@@ -1,124 +1,128 @@
 # NoteBins Backend
 
-This is the backend server for the NoteBins application, a real-time collaborative note-sharing platform.
+Backend server for the NoteBins application, a real-time collaborative note-sharing platform.
+
+## Deployment Status
+
+[![Build and deploy Node.js app to Azure](https://github.com/YOUR_USERNAME/notebins/actions/workflows/main_nodeapp.yml/badge.svg)](https://github.com/YOUR_USERNAME/notebins/actions/workflows/main_nodeapp.yml)
 
 ## Features
 
-- Create, read, update notes
-- Real-time collaboration using Socket.io
+- Real-time collaborative note editing with Socket.io
+- Note saving and management
 - Password protection for notes
-- Note expiration (automatic cleanup)
-- Save notes to library
-- MongoDB database for persistence
+- Automatic note expiration
+- RESTful API for note operations
 
-## Tech Stack
-
-- Node.js
-- Express.js
-- TypeScript
-- MongoDB (with Mongoose)
-- Socket.io for real-time communication
-- Winston for logging
-- Zod for validation
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js (v18 or higher)
-- MongoDB (local or Atlas)
-
-### Installation
+## Quick Start
 
 1. Clone the repository
-2. Navigate to the backend directory
-3. Install dependencies
-
-```bash
-cd backend
-npm install
-```
-
-4. Create a `.env` file based on `.env.example`
-5. Build the TypeScript code
-
-```bash
-npm run build
-```
-
-6. Start the server
-
-```bash
-npm start
-```
-
-For development with hot-reloading:
-
-```bash
-npm run dev
-```
-
-## Environment Variables
-
-Create a `.env` file in the root of the backend directory with the following variables:
-
-```
-# Server Configuration
-PORT=10000
-NODE_ENV=development
-
-# MongoDB Connection
-MONGODB_URI=mongodb://localhost:27017/notebins
-
-# Security
-JWT_SECRET=your_jwt_secret_key
-CORS_ORIGIN=http://localhost:5173
-
-# Note Settings
-NOTE_EXPIRATION_DAYS=3
-
-# Azure App Service Settings
-WEBSITE_NODE_DEFAULT_VERSION=18.x
-```
-
-## API Endpoints
-
-### Notes
-
-- `POST /api/notes` - Create a new note
-- `GET /api/notes/:id` - Get a note by ID
-- `PUT /api/notes/:id` - Update a note
-- `POST /api/notes/:id/verify` - Verify note password
-
-### Saved Notes
-
-- `POST /api/notes/save` - Save a note to library
-- `GET /api/notes/saved` - Get all saved notes
-- `GET /api/notes/saved/:id` - Get a saved note by ID
-- `POST /api/notes/saved/:id/verify` - Verify saved note password
-- `DELETE /api/notes/saved/:id` - Delete a saved note
-- `GET /api/notes/check/:noteId` - Check if a note exists in the library
-
-## Socket.io Events
-
-### Client to Server
-
-- `note:join` - Join a note room
-- `note:leave` - Leave a note room
-- `note:update` - Update a note
-
-### Server to Client
-
-- `note:update` - Receive note updates
-- `note:connections` - Receive connection count updates
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Create a `.env` file based on `.env.example`
+4. Start the development server:
+   ```bash
+   npm run dev
+   ```
 
 ## Deployment to Azure
 
-This backend is designed to be deployed to Azure App Service. Follow these steps:
+This backend is configured for automatic deployment to Azure App Service using GitHub Actions.
 
-1. Create an Azure App Service
-2. Set up environment variables in the Azure Portal
-3. Deploy the code using Azure CLI, GitHub Actions, or Azure DevOps
+### Prerequisites
+
+1. An Azure account with an active subscription
+2. An Azure App Service instance
+3. A MongoDB database (Atlas or Azure Cosmos DB with MongoDB API)
+
+### Setup Steps
+
+1. Create an Azure App Service:
+
+   ```bash
+   az group create --name my-node-app-rg --location centralindia
+   az appservice plan create --name my-node-app-plan --resource-group my-node-app-rg --sku B1 --is-linux
+   az webapp create --name nodeapp --resource-group my-node-app-rg --plan my-node-app-plan --runtime "NODE|18-lts"
+   ```
+
+2. Configure App Settings:
+
+   ```bash
+   az webapp config appsettings set --name nodeapp --resource-group my-node-app-rg --settings \
+     MONGODB_URI="your-mongodb-connection-string" \
+     NODE_ENV="production" \
+     CORS_ORIGIN="your-frontend-url" \
+     JWT_SECRET="your-secret-key" \
+     NOTE_EXPIRATION_DAYS=3
+   ```
+
+3. Set up GitHub Actions authentication:
+
+   You can use either service principal authentication (as configured in the workflow) or a publish profile:
+
+   **For publish profile**:
+
+   ```bash
+   az webapp deployment list-publishing-profiles --name nodeapp --resource-group my-node-app-rg --xml > publish-profile.xml
+   ```
+
+   Then add the content as a GitHub secret named `AZURE_WEBAPP_PUBLISH_PROFILE`.
+
+   **For service principal** (already configured in your workflow):
+   Ensure the following secrets are set in your GitHub repository:
+
+   - `AZUREAPPSERVICE_CLIENTID_E2606AAA9E5E48FF8CF66B6706BEE255`
+   - `AZUREAPPSERVICE_TENANTID_7AAD3F825C2D41D8BE7CAD38C70D2451`
+   - `AZUREAPPSERVICE_SUBSCRIPTIONID_625B6336EF244756A94B7EC3FC023742`
+
+4. Push to the main branch or manually trigger the workflow to deploy.
+
+## Troubleshooting
+
+If you encounter issues with the deployment, check:
+
+1. The GitHub Actions logs for detailed error messages
+2. The Azure App Service logs using:
+   ```bash
+   az webapp log tail --name nodeapp --resource-group my-node-app-rg
+   ```
+3. Make sure your MongoDB Atlas IP whitelist includes Azure App Service IPs
+4. Verify that the web.config file is properly configured for WebSockets
+5. Check if the resource exists in the Azure portal at the correct location
+
+## API Documentation
+
+See [API.md](./API.md) for detailed API documentation.
+
+## Project Structure
+
+```
+backend/
+├── src/               # TypeScript source code
+│   ├── config/        # Configuration files
+│   ├── controllers/   # Request handlers
+│   ├── middleware/    # Express middleware
+│   ├── models/        # Mongoose models
+│   ├── routes/        # API routes
+│   ├── services/      # Business logic
+│   └── index.ts       # Entry point
+├── dist/              # Compiled JavaScript (generated)
+├── scripts/           # Utility scripts
+├── logs/              # Application logs (generated)
+├── .env               # Environment variables (create from .env.example)
+└── package.json       # Dependencies and scripts
+```
+
+## Available Scripts
+
+- `npm run dev`: Start the development server with hot-reloading
+- `npm run build`: Build the TypeScript code
+- `npm start`: Start the production server
+- `npm test`: Run tests
+- `npm run lint`: Run ESLint
+- `npm run prepare-deployment`: Prepare files for deployment
 
 ## License
 

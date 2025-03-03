@@ -89,7 +89,7 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 // Start server
-const PORT = process.env.PORT || 10000;
+const PORT = process.env.PORT || 8080;
 server.listen(PORT, () => {
   logger.info(`Server running on port ${PORT}`);
 });
