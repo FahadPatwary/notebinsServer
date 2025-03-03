@@ -197,4 +197,17 @@ node server.js
   }
 }
 
+// Copy package-lock.json to the dist directory
+const packageLockSrc = path.join(rootDir, 'package-lock.json');
+const packageLockDest = path.join(distDir, 'package-lock.json');
+if (fs.existsSync(packageLockSrc)) {
+  console.log('Copying package-lock.json to dist directory...');
+  try {
+    fs.copyFileSync(packageLockSrc, packageLockDest);
+    console.log('package-lock.json copied successfully.');
+  } catch (error) {
+    console.warn('Failed to copy package-lock.json:', error);
+  }
+}
+
 console.log('Deployment preparation complete!'); 

@@ -15,4 +15,12 @@ fi
 
 # Start the application
 echo "Starting server on port $PORT..."
-node index.js 
+
+# Try to use server.js first, fall back to index.js if it doesn't exist
+if [ -f "server.js" ]; then
+  echo "Using server.js as entry point"
+  node server.js
+else
+  echo "Using index.js as entry point"
+  node index.js
+fi 

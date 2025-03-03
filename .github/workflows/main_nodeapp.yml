@@ -27,11 +27,11 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: "npm"
-          cache-dependency-path: "backend/package-lock.json"
+          # Disable cache to avoid issues
+          cache: false
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
         working-directory: backend
 
       - name: Build
@@ -53,6 +53,7 @@ jobs:
           cp -r dist/* deployment/
           cp web.config deployment/ || true
           cp package.json deployment/
+          cp package-lock.json deployment/ || true
           cp startup.sh deployment/ || true
           chmod +x deployment/startup.sh || true
           cd deployment
